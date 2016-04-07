@@ -1,0 +1,6 @@
+*.iws
+Icon?
+.DS_Store
+unused/
+__pycache__/
+.idea/
