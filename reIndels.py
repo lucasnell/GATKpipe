@@ -1,207 +1,104 @@
 #!/usr/local/apps/anaconda/3-2.2.0/bin/python
 
+"""Local realignment around indels via GATK RealignerTargetCreator and IndelRealigner.
 
-"""Local realignment around indels.
-
-With some minor arguments, this compiles the command and runs it multithreaded, 1 for
-each of the files you send it.
-
-Requires ~15gb RAM per thread.
+Requires ~15gb RAM per thread for mice AND stickleback.
 
 Takes from ~12 hrs to 2 days.
 """
 
 
 
-
-
-
-import multiprocessing as mp
-from time import strftime
-import argparse as ap
-
-import baseFuns as lan
-
-
-# import sys, os, threading
-# from functools import reduce
-# import sys
-# import re
-
-
-
-__author__ = 'Lucas Nell'
-
-
-
-
-###############################
-# Arguments
-###############################
-
-# Required: bam file(s), directory where bam files are, chromosome name
-# Optional: number of threads, '--doParallel' for running multithreaded
-
-# This in command line for example *.bam aligned to chr X mm9 in parallel
-# $py bam.bam foo.bam ffoo.bam -d /lustre1/lan/musDNA/cast/bam19b9 -c Xb9 -t 3
-# --doParallel
-
-
-###############################
-# EXAMPLE DICTIONARY (for 'Command' below)
-###############################
-# Dictionary = {
-#     'input': 'castH12_X9mD.bam',  # input bam file; will change for each thread
-#     'ass': '/lustre1/lan/musGenome/fasta/chr19b9.fa',  # Assembly fasta file
-#     'dir': '/lustre1/lan/musDNA/cast/bamXb9'  # Directory for bam files
-# }
-
-
-###############################
-# Command
-###############################
-Command = \
-'''module load java/jdk1.7.0_67
-module load samtools/latest\n
-
-export file=%(input)s
-export assembly=%(ass)s\n
-
-cd %(dir)s\n
-
-java -jar /usr/local/apps/gatk/3.4.0/GenomeAnalysisTK.jar \\
--T RealignerTargetCreator \\
--R ${assembly} \\
--I ${file} \\
--o ${file/mD.bam/rI.list}\n
-
-java -jar /usr/local/apps/gatk/3.4.0/GenomeAnalysisTK.jar \\
--T IndelRealigner \\
--R ${assembly} \\
--I ${file} \\
--targetIntervals ${file/mD.bam/rI.list} \\
--o ${file/mD.bam/rI.bam}\n
-
-samtools index -b ${file/mD.bam/rI.bam}
+'''
+import subprocess as sp
+sp.call('cd ~/uga/Python/GATKpipe && scp reIndels.py base.py \
+lan@xfer2.gacrc.uga.edu:~/tools/GATKpipe', shell = True)
 '''
 
-###############################
-# Setting up parser
-###############################
 
-ScriptDescript = '''Local realignment around indels'''
+import argparse as ap
+import base
+
+
+# =====================
+#  Setting up parser
+# =====================
+ScriptDescript = 'Local realignment around indels via GATK RealignerTargetCreator ' + \
+                 'and IndelRealigner.'
 
 Parser = ap.ArgumentParser(description = ScriptDescript)
-Parser.add_argument('-d', '--directory',  type = str, metavar = 'D',
-                    help = 'Full path to bam file(s)', required = True)
-Parser.add_argument('-c', '--chromosome', type = str, metavar = 'C',
-                    choices = ['X', 'Y', 'Xb9', '19', '19b9'], required = True,
-                    help = 'The chromosome bam file(s) was/were aligned to')
-Parser.add_argument('-t', '--threads',  type = int, metavar = 'T',
-                    required = False, default = 1,
-                    help = '# threads to use (default=1); ignored if not run in parallel')
-Parser.add_argument('files', type = str, metavar = 'F', nargs = '+',
-                    help = 'bam file(s) that have duplicates marked (end in "mD.bam"')
-Parser.add_argument('--doParallel', dest='parallel', action='store_true',
-                    help = 'Should it be run in parallel? The default is False.')
-Parser.set_defaults(parallel = False)
+Parser.add_argument('-r', '--reference', metavar = 'R', 
+                    help = "Path to uncompressed reference fasta file. It is assumed " + \
+                           "that all input BAM files are aligned to this reference.")
+Parser.add_argument('-c', '--cores', type = int, metavar = 'C', default = 1, 
+                    help = "Maximum number of cores to use. Defaults to 1.")
+Parser.add_argument('files', metavar = 'F', nargs = '+',
+                    help = "BAM input file(s).")
 
 
-# -----------------------------
-# Now reading the arguments
-# -----------------------------
+# =====================
+# Reading the arguments
+# =====================
 args = vars(Parser.parse_args())
+ref = args['reference']
+cores = args['cores']
+files = args['files']
+if files.__class__ == str:
+    files = [files]
+
+assert ref.endswith('.fa') or ref.endswith('.fasta'), \
+    'Reference is not an uncompressed fasta file.'
+
+assert all([x.endswith('.bam') or x.endswith('.BAM') for x in files]), \
+    'Not all input files are BAM files.'
+
+assert cores > 0 and 'int' in str(cores.__class__), '`cores` must be an integer > 0.'
+
+
+# =====================
+# Making cores list
+# =====================
+
+# Because `RealignerTargetCreator` allows multithreading for a single sample, we've add 
+# the ability to specify more cores than samples, which will be passed to that step.
+
+# For sample(s) that get 1 core, we'll skip the `-nt` argument altogether.
+
+# Also have to adjust `cores` object for Pool function if it's larger than # files 
+
+coreStrList, cores = base.makeCoreStringList(cores, files, 'nt')
 
 
 
 
-Directory = args['directory']
-Chromosome = args['chromosome']
-if args['parallel']:
-    Threads = args['threads']
-else:
-    Threads = 1
-bamFiles = args['files']
+# =====================
+# Function to run command
+# =====================
 
-# Assembly file, derived from the chromosome name
-Assembly = lan.getAssem(Chromosome)
-# Common components for later replacing parts of 'Command'
-Dict = {'ass': Assembly, 'dir': Directory}
-
-
-
-
-
-
-
-
-# ====================================================================================
-# ====================================================================================
-# # Previous way: using only the ID
-# ====================================================================================
-# ====================================================================================
-
-# # From the ID input from bash script, get 5 main objects for further functions
-# Assembly, Subspp, Suff, Directory, Dict = lan.GetObjs(sys.argv[1])
-#
-# # File search for bam files
-# bamFiles = lan.GetBAMs(Directory, Subspp, Suff + 'mD.bam')
+def runReIndels(filePath, coreString):
+    
+    """Run command to do local realignment around indels on BAM file."""
+    
+    directory, filename = base.splitPath(filePath)
+    
+    command = base.reIndels % {'bam': filename, 'ref': ref, 'corS': coreString}
+    
+    logFileName = '_'.join(filePath.split('_')[:-1] + ['rI.log'])
+    
+    # Run command and save output to log file
+    base.cleanRun(commandString = command, logFile = logFileName,
+                  workingDir = directory, logOpenMode = 'wt')
+    
+    return
 
 
-###############################
-# Running commands
-# on separate threads
-###############################
+# =====================
+# Run command on all file(s)
+# =====================
 
-if __name__ == '__main__':
-    print('~'*25, '\nreIndels.py\nStarted', strftime("%D at %H:%M:%S"), '\n', '. '*3)
-    if Threads > 1:
-        processes = []
-        for b in bamFiles:
-            t = mp.Process(target = lan.DoComm, args = (b, Command, Dict))
-            processes.append(t)
-        # Start the processes
-        for p in processes:
-            p.start()
-        # Ensure all of the processes have finished
-        for p in processes:
-            p.join()
-    else:
-        for b in bamFiles:
-            lan.DoComm(b, Command, Dict)
-    print('Process Ended', strftime("%D at %H:%M:%S"), '\n' + '~'*25)
+if __name__ ==  '__main__':
+    base.poolRunFun(function = runReIndels, cores = cores, 
+                    inerable = zip(files, coreStrList))
 
 
 
-# os.system('''scp /Users/lucasnell/uga/Python/GATKpipe/reIndels.py \
-# lan@xfer2.gacrc.uga.edu:~/GATKpipe''')
-
-
-
-
-
-
-
-
-
-
-# #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# # for testing
-#
-# from imp import reload
-# reload(lan)
-# Assembly, Subspp, Suff, Directory, Dict = lan.GetObjs('cast_X9')#sys.argv[1])
-#
-# print(Assembly, Subspp, Suff, Directory, Dict, sep='\n')
-#
-# bamFiles = ['castH12_X9mD.bam', 'castH28_X9mD.bam']
-# filt=[]
-# c = Dict
-# c['input'] = bamFiles[0]
-#
-# NewComm = str(Command % Dict)
-# print(NewComm)
-#
-# #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

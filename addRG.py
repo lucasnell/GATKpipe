@@ -1,52 +1,73 @@
 #!/usr/local/apps/anaconda/3-2.2.0/bin/python
 
+"""Add read groups to bam files using PICARD AddOrReplaceReadGroups.
 
-# Call variants with HaplotypeCaller
-# With some minor arguments, this compiles the command and runs it
-
-import sys
-import multiprocessing as mp
-from time import strftime
+9 cores used 5.870788 Gb RAM and took 1 hr, 13 min."""
 
 
-command = '''java -Xmx2g -jar /usr/local/apps/picard/1.135/dist/picard.jar \\
-AddOrReplaceReadGroups \\
-CREATE_INDEX=true \\
-INPUT=${1} \\
-OUTPUT=${1/.bam/P.bam} \\
-RGID=LANE1 \\
-RGLB=${1/.bam/} \\
-RGPL=ILLUMINA \\
-RGPU=ILLUMINA \\
-RGSM=${1/.bam/}'''
+import argparse as ap
+import base
 
-
-comm2 = \
-'''#PBS -S /bin/bash
-#PBS -q batch
-#PBS -N RG_d<SUFF>
-#PBS -l nodes=1:ppn=1:AMD
-#PBS -l walltime=20:00:00
-#PBS -l mem=3gb
-
-# -----------------------
-# THE ONLY THINGS YOU NEED TO CHANGE BETWEEN *.BAM
-export sub=dom
-export suff=<SUFF>
-# -----------------------
-
-module load java/jdk1.7.0_67
-export addRG=${HOME}/GATKpipe/addRG.sh
-module load samtools/latest
-
-cd /lustre1/lan/M_m_${sub}/BAM_${suff/q/}
-
-for f in ${sub}*_${suff}.bam
-do
-    $addRG $f
-    samtools index -b ${f/.bam/P.bam}
-done
-
-qsub ${HOME}/mDups/mD_d${suff}.sh
 
 '''
+import subprocess as sp
+sp.call('cd ~/uga/Python/GATKpipe && scp addRG.py base.py \
+lan@xfer2.gacrc.uga.edu:~/tools/GATKpipe', shell = True)
+'''
+
+# =====================
+#  Setting up parser
+# =====================
+ScriptDescript = 'Add read groups to bam files using PICARD AddOrReplaceReadGroups.'
+
+Parser = ap.ArgumentParser(description = ScriptDescript)
+Parser.add_argument('-c', '--cores', type = int, metavar = 'C', default = 1,
+                    help = "Maximum number of cores to use. Defaults to 1.")
+Parser.add_argument('files', metavar = 'F', nargs = '+',
+                    help = "BAM input file(s).")
+
+# =====================
+# Reading the arguments
+# =====================
+args = vars(Parser.parse_args())
+cores = args['cores']
+files = args['files']
+if files.__class__ == str:
+    files = [files]
+
+assert all([x.endswith('.bam') or x.endswith('.BAM') for x in files]), \
+    'Not all input files are BAM files.'
+
+
+
+# =====================
+# Function to run command
+# =====================
+
+def runAddRG(filePath):
+    
+    """Run command to add read groups to BAM file and index new one."""
+    
+    directory, filename = base.splitPath(filePath)
+    
+    command = base.addRG % {'bam': filename}
+    
+    logFileName = filePath.replace('.bam', '_rG.log')
+    
+    # Run command and save output to log file
+    base.cleanRun(commandString = command, logFile = logFileName,
+                  workingDir = directory, logOpenMode = 'wt')
+    
+    return
+
+
+
+
+# =====================
+# Run command on all file(s)
+# =====================
+
+if __name__ ==  '__main__':
+    base.poolRunFun(function = runAddRG, cores = cores, inerable = files)
+
+

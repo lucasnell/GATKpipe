@@ -2,122 +2,104 @@
 
 """Call variants with HaplotypeCaller.
 
-With some minor arguments, this compiles the command and runs it multithreaded, 1 for
-each of the files you send it.
-
 Requires about ~12gb RAM per thread.
 
-May take 1-2 days."""
+May take 1-2 days.
 
 
-import sys
-import multiprocessing as mp
-from time import strftime
-
-import baseFuns as lan
-
-
-__author__ = 'Lucas Nell'
+HaplotypeCaller can be parallel via `-nct ${cores}`, but...
+"Many users have reported issues running HaplotypeCaller with the -nct argument, 
+so we recommend using Queue to parallelize HaplotypeCaller instead of multithreading."
+So be advised...
+"""
 
 
-
-
-
-###############################
-# Arguments needed...
-###############################
-# ID based on naming scheme
-# (e.g., 'cast_Xb9' for castaneus aligned to chrX mm9)
-
-
-###############################
-# EXAMPLE DICTIONARY (for 'Command' below)
-###############################
-# Dictionary = {
-#     'input': 'castH12_X9mD.bam',  # input bam file; will change for each thread
-#     'ass': '/lustre1/lan/musGenome/chr19b9.fa',  # Assembly fasta file
-#     'dir': '/lustre1/lan/cast/GATK'  # Directory for bam files
-# }
-
-
-###############################
-# Command
-###############################
-Command = \
-'''module load java/jdk1.7.0_67\n
-
-export file=%(input)s
-export outFile=${file/rI.bam/cV.bam}
-export outFile=${outFile/.bam/.g.vcf}\n
-
-cd %(dir)s\n
-
-java -jar /usr/local/apps/gatk/3.4.0/GenomeAnalysisTK.jar \\
--T HaplotypeCaller \\
--R %(ass)s \\
--I $file \\
---emitRefConfidence GVCF \\
--o $outFile
+'''
+import subprocess as sp
+sp.call('cd ~/uga/Python/GATKpipe && scp callVariants.py base.py \
+lan@xfer2.gacrc.uga.edu:~/tools/GATKpipe', shell = True)
 '''
 
-###############################
-# Read command line args
-###############################
-
-# From the ID input from bash script, get 5 main objects for further functions
-Assembly, Subspp, Chr, Directory, Dict = lan.GetObjs(sys.argv[1])
-
-# File search for bam files
-bamFiles = lan.GetBAMs(Directory, Subspp, Chr + 'rI.bam')
+import argparse as ap
+import base
 
 
-###############################
-# Running commands
-# on separate threads
-###############################
+# =====================
+#  Setting up parser
+# =====================
+ScriptDescript = 'Call variants with GATK HaplotypeCaller.'
 
-if __name__ == '__main__':
-    print('~'*25, '\ncallVariants.py\nStarted', strftime("%D at %H:%M:%S"), '\n', '. '*3)
-    threads = []
-    for b in bamFiles:
-        t = mp.Process(target = lan.DoComm, args = (b, Command, Dict))
-        threads.append(t)
-    # Start the processes
-    for t in threads:
-        t.start()
-    # Ensure all of the processes have finished
-    for t in threads:
-        t.join()
-    print('Process Ended', strftime("%D at %H:%M:%S"), '\n' + '~'*25)
+Parser = ap.ArgumentParser(description = ScriptDescript)
+Parser.add_argument('-r', '--reference', metavar = 'R', 
+                    help = "Path to uncompressed reference fasta file. It is assumed " + \
+                           "that all input BAM files are aligned to this reference.")
+Parser.add_argument('-c', '--cores', type = int, metavar = 'C', default = 1, 
+                    help = "Maximum number of cores to use. Defaults to 1.")
+Parser.add_argument('files', metavar = 'F', nargs = '+',
+                    help = "BAM input file(s).")
 
 
+# =====================
+# Reading the arguments
+# =====================
+args = vars(Parser.parse_args())
+ref = args['reference']
+cores = args['cores']
+files = args['files']
+if files.__class__ == str:
+    files = [files]
 
-# os.system('''scp /Users/lucasnell/uga/Python/GATKpipe/callVariants.py \
-# lan@xfer2.gacrc.uga.edu:~/GATKpipe''')
+assert ref.endswith('.fa') or ref.endswith('.fasta'), \
+    'Reference is not an uncompressed fasta file.'
 
-
-
-
-# #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# # for testing
-#
-# from imp import reload
-# reload(lan)
-# Assembly, Subspp, Suff, Directory, Dict = lan.GetObjs('cast_X9')#sys.argv[1])
-#
-# print(Assembly, Subspp, Suff, Directory, Dict, sep='\n')
-#
-# bamFiles = ['castH12_X9rI.bam', 'castH28_X9rI.bam']
-# filt=[]
-# c = Dict
-# c['input'] = bamFiles[0]
-#
-# NewComm = str(Command % Dict)
-# print(NewComm)
-#
-# #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+assert all([x.endswith('.bam') or x.endswith('.BAM') for x in files]), \
+    'Not all input files are BAM files.'
 
 
+
+# =====================
+# Making cores list
+# =====================
+
+# Because `RealignerTargetCreator` allows multithreading for a single sample, we've add 
+# the ability to specify more cores than samples, which will be passed to that step.
+
+# For sample(s) that get 1 core, we'll skip the `-nct` argument altogether.
+
+# Also have to adjust `cores` object for Pool function if it's larger than # files 
+
+coreStrList, cores = base.makeCoreStringList(cores, files, 'nct')
+
+
+
+
+# =====================
+# Function to run command
+# =====================
+
+def runCallVariants(filePath, coreString):
+    
+    """Run command to call variants on BAM file."""
+    
+    directory, filename = base.splitPath(filePath)
+    
+    command = base.callVariants % {'bam': filename, 'ref': ref, 'corS': coreString}
+    
+    logFileName = '_'.join(filePath.split('_')[:-1] + ['cV.log'])
+    
+    # Run command and save output to log file
+    base.cleanRun(commandString = command, logFile = logFileName,
+                  workingDir = directory, logOpenMode = 'wt')
+    
+    return
+
+
+
+# =====================
+# Run command on all file(s)
+# =====================
+
+if __name__ ==  '__main__':
+    base.poolRunFun(function = runCallVariants, cores = cores, 
+                    inerable = zip(files, coreStrList))
 

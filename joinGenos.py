@@ -2,11 +2,151 @@
 
 """Perform joint genotyping on gVCF files produced by HaplotypeCaller.
 
-With some minor arguments, this compiles the command and runs it.
-
 Required ~ 3gb RAM per thread.
 
 Takes around 10-20 minutes."""
+
+
+
+import argparse as ap
+import base
+
+
+# =====================
+#  Setting up parser
+# =====================
+ScriptDescript = 'Local realignment around indels via GATK RealignerTargetCreator ' + \
+                 'and IndelRealigner.'
+
+Parser = ap.ArgumentParser(description = ScriptDescript)
+Parser.add_argument('-r', '--reference', metavar = 'R', required = True,
+                    help = "Path to uncompressed reference fasta file. It is assumed " + \
+                           "that all input files are aligned to this reference.")
+# >>>>>
+Parser.add_argument('-o', '--outputName', metavar = 'O', required = True, 
+                    help = "Name of output file, not including extensions or " + \
+                           "'_jG' suffix.")
+Parser.add_argument('-c', '--cores', type = int, metavar = 'C', default = 1, 
+                    help = "Maximum number of cores to use. Defaults to 1.")
+# >>>>>
+Parser.add_argument('-m', '--moreOptions', metavar = 'M', default = '', 
+                    help = "A single string with additional options to pass " + \
+                           "to GenotypeGVCFs.")
+# >>>>>
+Parser.add_argument('files', metavar = 'F', nargs = '+',
+                    help = "gVCF input file(s) that will be jointly genotyped.")
+
+
+# =====================
+# Reading the arguments
+# =====================
+args = vars(Parser.parse_args())
+ref = args['reference']
+outName = args['outputName']
+cores = args['cores']
+moreOpts = args['moreOptions']
+files = args['files']
+if files.__class__ == str:
+    files = [files]
+
+assert ref.endswith('.fa') or ref.endswith('.fasta'), \
+    'Reference is not an uncompressed fasta file.'
+
+# >>>>>
+assert all([x.endswith('.g.vcf') for x in files]), \
+    'Not all input files are gVCF files.'
+
+
+
+# =====================
+# Making cores list
+# =====================
+
+# `GenotypeGVCFs` allows multithreading, but if we specify 1 core, we'll skip the 
+# `-nt` argument altogether.
+
+if cores > 1:
+    coreStr = ''
+else:
+    coreStr = '-nt %i ' % cores
+
+
+# =====================
+# Making variant list
+# =====================
+
+
+varStr = '--variant %s ' % ' \\\n--variant '.join(files)
+
+
+
+
+# {'varStr': varStr, 'ref': ref, 'coreStr': coreStr, 'out': outName, 
+# 'moreOpts': moreOpts}
+Command = \
+'''export reference=%(ref)s
+
+module load java/latest\n
+
+java -jar /usr/local/apps/gatk/latest/GenomeAnalysisTK.jar \\
+-T GenotypeGVCFs \\
+-R ${reference} \\
+%(coreStr)s\\
+%(varStr)s\\
+%(moreOpts)s\\
+-o %(out)s_jG.vcf'''
+
+# Mike also added the following for stickleback...
+'''-stand_emit_conf 10 -stand_call_conf 30'''
+
+
+# Left off: below is from callVariants, which obv needs to be adapted to here.
+
+# def runCallVariants(filePath, coreString):
+#     
+#     """Run command to call variants on BAM file."""
+#     
+#     directory, filename = base.splitPath(filePath)
+#     
+#     command = base.callVariants % {'bam': filename, 'ref': ref, 'corS': coreString}
+#     
+#     logFileName = '_'.join(filePath.split('_')[:-1] + ['cV.log'])
+#     
+#     # Run command and save output to log file
+#     base.cleanRun(commandString = command, logFile = logFileName,
+#                   workingDir = directory, logOpenMode = 'wt')
+#     
+#     return
+# 
+# 
+# 
+# # =====================
+# # Run command on all file(s)
+# # =====================
+# 
+# if __name__ ==  '__main__':
+#     base.poolRunFun(function = runCallVariants, cores = cores, 
+#                     inerable = zip(files, coreStrList))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -14,7 +154,7 @@ Takes around 10-20 minutes."""
 import os
 import argparse as ap
 
-import baseFuns as lan
+import base as lan
 
 
 __author__ = 'Lucas Nell'

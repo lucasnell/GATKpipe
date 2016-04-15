@@ -33,7 +33,7 @@ from multiprocessing import Pool
 # from time import strftime
 import os
 
-import baseFuns as lan
+import base as lan
 
 
 __author__ = 'Lucas Nell'

@@ -16,7 +16,7 @@ import os
 import gzip
 import pandas as pd
 
-import baseFuns as lan
+import base as lan
 
 
 __author__ = 'Lucas Nell'
