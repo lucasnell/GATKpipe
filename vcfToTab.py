@@ -8,6 +8,135 @@ VCF file to a tab-delimited table.
 Uses 4-9gb RAM per thread.
 Takes 5-10 minutes.
 
+"""
+
+
+'''
+import subprocess as sp
+sp.call('cd ~/uga/Python/GATKpipe && scp vcfToTab.py base.py \
+lan@xfer2.gacrc.uga.edu:~/tools/GATKpipe', shell = True)
+'''
+
+import argparse as ap
+import base
+
+
+# =====================
+#  Setting up parser
+# =====================
+ScriptDescript = 'Select variants with SelectVariants. ' + \
+                 'Extract fields with VariantsToTable.'
+
+Parser = ap.ArgumentParser(description = ScriptDescript)
+Parser.add_argument('-r', '--reference', metavar = 'R', 
+                    help = "Path to uncompressed reference fasta file. It is assumed " + \
+                           "that all input VCF files were aligned to this reference.")
+Parser.add_argument('-c', '--cores', type = int, metavar = 'C', default = 1, 
+                    help = "Maximum number of cores to use. Defaults to 1.")
+Parser.add_argument('files', metavar = 'F', nargs = '+',
+                    help = 'VCF file(s) that you would like to split by sample.')
+
+
+# =====================
+# Reading the arguments
+# =====================
+args = vars(Parser.parse_args())
+ref = args['reference']
+cores = args['cores']
+files = args['files']
+if files.__class__ == str:
+    files = [files]
+
+assert ref.endswith('.fa') or ref.endswith('.fasta'), \
+    'Reference is not an uncompressed fasta file.'
+
+assert all([x.endswith('.vcf') or x.endswith('.VCF') for x in files]), \
+    'Not all input files are VCF files.'
+
+
+
+# =====================
+# Smaller functions
+# =====================
+
+def vcfNames(vcfFile):
+    
+    """Extract sample names from a vcf file."""
+    
+    begParts = ['#CHROM', 'POS', 'ID', 'REF', 'ALT', 'QUAL', 'FILTER', 'INFO', 'FORMAT']
+    
+    with open(vcfFile, mode = 'rt') as f:
+        for line in f:
+            if line.startswith('#CHROM'):
+                sampNames = [x for x in line.strip().split('\t') if x not in begParts]
+                return sampNames
+    return
+
+
+
+
+
+# =====================
+# Function to run command
+# =====================
+
+def runCallVariants(filePath, coreString):
+    
+    """Run command to call variants on BAM file."""
+    
+    directory, filename = base.splitPath(filePath)
+    
+    command = base.callVariants % {'bam': filename, 'ref': ref, 'corS': coreString}
+    
+    logFileName = '_'.join(filePath.split('_')[:-1] + ['cV.log'])
+    
+    # Run command and save output to log file
+    base.cleanRun(commandString = command, logFile = logFileName,
+                  workingDir = directory, logOpenMode = 'wt')
+    
+    return
+
+
+
+# =====================
+# Run command on all file(s)
+# =====================
+
+if __name__ ==  '__main__':
+    base.poolRunFun(function = runCallVariants, cores = cores, 
+                    inerable = zip(files, coreStrList))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+"""
 
 Example submission script.
 
@@ -23,14 +152,11 @@ Example submission script.
 export py=${HOME}/GATKpipe/vcfToTab.py
 
 $py -t 8 -d /lustre1/lan/musDNA/dom/GATK dom_Xb9jG.vcf:Xb9 dom_19b9jG.vcf:19b9
-
 """
-
 
 
 import argparse as ap
 from multiprocessing import Pool
-# from time import strftime
 import os
 
 import base as lan
@@ -112,16 +238,6 @@ maxCores = args['threads']
 # Assembly files, derived from the chromosome name
 Assemblies = [lan.getAssem(c) for c in Chrs]
 
-
-
-def vcfNames(vcfFile):
-    """Extract sample names from a vcf file."""
-    begParts = ['#CHROM', 'POS', 'ID', 'REF', 'ALT', 'QUAL', 'FILTER', 'INFO', 'FORMAT']
-    with open(vcfFile, mode = 'rt') as f:
-        for line in f:
-            if line.startswith('#CHROM'):
-                sampNames = [x for x in line.strip().split('\t') if x not in begParts]
-                return sampNames
 
 
 def makeBaseOut(f, s):

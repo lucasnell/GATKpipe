@@ -85,8 +85,8 @@ def makeCoreStringList(cores, files, parType):
     """Make list of 'core strings' for multithreading commands, plus adjust `cores`."""
     
     if cores > len(files):
-        coreList = [(cores // len(files)) + 1 for x in range(cores % len(files))] + \
-                   [cores // len(files) for y in range(len(files) - (cores % len(files)))]
+        coreList = [(cores // len(files)) + 1] * (cores % len(files)) + \
+                   [cores // len(files)] * (len(files) - (cores % len(files)))
         coresAdj = len(files)
     else:
         coreList = [1] * len(files)
@@ -102,7 +102,6 @@ def makeCoreStringList(cores, files, parType):
     coreStrList = [makeCoreString(x, parType) for x in coreList]
     
     return coreStrList, coresAdj
-
 
 
 
@@ -226,3 +225,17 @@ java -jar /usr/local/apps/gatk/latest/GenomeAnalysisTK.jar \\
 --genotyping_mode DISCOVERY \\
 -o ${outFile}
 '''
+
+
+jointGeno = \
+'''export reference=%(ref)s
+
+module load java/latest\n
+
+java -jar /usr/local/apps/gatk/latest/GenomeAnalysisTK.jar \\
+-T GenotypeGVCFs \\
+-R ${reference} \\
+%(coreS)s \\
+%(varS)s \\
+%(moreOpts)s \\
+-o %(out)s_jG.vcf'''

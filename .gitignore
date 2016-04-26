@@ -4,3 +4,4 @@ Icon?
 unused/
 __pycache__/
 .idea/
+tmp_*
