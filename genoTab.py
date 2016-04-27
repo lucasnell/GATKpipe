@@ -13,7 +13,7 @@ Takes 5-10 minutes.
 
 '''
 import subprocess as sp
-sp.call('cd ~/uga/Python/GATKpipe && scp vcfToTab.py base.py \
+sp.call('cd ~/uga/Python/GATKpipe && scp genoTab.py base.py \
 lan@xfer2.gacrc.uga.edu:~/tools/GATKpipe', shell = True)
 '''
 
@@ -55,6 +55,32 @@ assert all([x.endswith('.vcf') or x.endswith('.VCF') for x in files]), \
 
 
 
+
+# {'jointVCF': VCFfile, 'samp': sample, 'ref': reference, 'out': outName}
+selTabComm = \
+'''export jointVCF=%(jointVCF)s
+export samp=%(samp)s
+export reference=%(ref)s
+outBase=%(out)s\n
+
+module load java/latest\n
+
+java -jar /usr/local/apps/gatk/latest/GenomeAnalysisTK.jar \\
+-T SelectVariants \\
+-R ${reference} \\
+-V ${jointVCF} \\
+-o ${outBase}.vcf \\
+-sn ${samp}\n
+
+java -jar /usr/local/apps/gatk/latest/GenomeAnalysisTK.jar \\
+-T VariantsToTable \\
+-R ${reference} \\
+-V ${outBase}.vcf \\
+-F POS -GF GT -GF PL -GF GQ \\
+-o ${outBase}.table
+
+'''
+
 # =====================
 # Smaller functions
 # =====================
@@ -68,9 +94,13 @@ def vcfNames(vcfFile):
     with open(vcfFile, mode = 'rt') as f:
         for line in f:
             if line.startswith('#CHROM'):
-                sampNames = [x for x in line.strip().split('\t') if x not in begParts]
+                allCols = line.strip().split('\t')
+                sampNames = [x for x in allCols if x not in begParts]
                 return sampNames
     return
+
+
+
 
 
 
@@ -149,7 +179,7 @@ Example submission script.
 #PBS -M lucnell@gmail.com
 #PBS -m ae
 
-export py=${HOME}/GATKpipe/vcfToTab.py
+export py=${HOME}/GATKpipe/genoTab.py
 
 $py -t 8 -d /lustre1/lan/musDNA/dom/GATK dom_Xb9jG.vcf:Xb9 dom_19b9jG.vcf:19b9
 """
@@ -328,5 +358,5 @@ if __name__ == '__main__':
 
 
 
-# os.system('''scp /Users/lucasnell/uga/Python/GATKpipe/vcfToTab.py \
+# os.system('''scp /Users/lucasnell/uga/Python/GATKpipe/genoTab.py \
 # lan@xfer2.gacrc.uga.edu:~/GATKpipe''')
