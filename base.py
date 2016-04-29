@@ -121,7 +121,7 @@ samtools faidx ${ref}\n
 java -Xmx2g -jar /usr/local/apps/picard/latest/picard.jar \\
 CreateSequenceDictionary \\
 REFERENCE=${ref} \\
-OUTPUT=${ref/.fa/.dict}
+OUTPUT=${dictOut}
 '''
 
 

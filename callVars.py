@@ -1,5 +1,3 @@
-#!/usr/local/apps/anaconda/3-2.2.0/bin/python
-
 """Call variants with HaplotypeCaller.
 
 Requires about ~12gb RAM per thread.
@@ -14,35 +12,13 @@ So be advised...
 """
 
 
-'''
-import subprocess as sp
-sp.call('cd ~/uga/Python/GATKpipe && scp callVariants.py base.py \
-lan@xfer2.gacrc.uga.edu:~/tools/GATKpipe', shell = True)
-'''
-
-import argparse as ap
 import base
-
-
-# =====================
-#  Setting up parser
-# =====================
-ScriptDescript = 'Call variants with GATK HaplotypeCaller.'
-
-Parser = ap.ArgumentParser(description = ScriptDescript)
-Parser.add_argument('-r', '--reference', metavar = 'R', 
-                    help = "Path to uncompressed reference fasta file. It is assumed " + \
-                           "that all input BAM files are aligned to this reference.")
-Parser.add_argument('-c', '--cores', type = int, metavar = 'C', default = 1, 
-                    help = "Maximum number of cores to use. Defaults to 1.")
-Parser.add_argument('files', metavar = 'F', nargs = '+',
-                    help = "BAM input file(s).")
-
+from __main__ import args
 
 # =====================
-# Reading the arguments
+# Reading the arguments from `args`
 # =====================
-args = vars(Parser.parse_args())
+
 ref = args['reference']
 cores = args['cores']
 files = args['files']
@@ -96,10 +72,11 @@ def runCallVariants(filePath, coreString):
 
 
 # =====================
-# Run command on all file(s)
+# `main` function to run 
+# command on all file(s)
 # =====================
 
-if __name__ ==  '__main__':
+def main():
     base.poolRunFun(function = runCallVariants, cores = cores, 
                     inerable = zip(files, coreStrList))
 

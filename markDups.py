@@ -1,5 +1,3 @@
-#!/usr/local/apps/anaconda/3-2.2.0/bin/python
-
 """Mark duplicates in BAM files via PICARD MarkDuplicates.
 
 Note: Multithreaded is only useful if you have tons of RAM (>=20 GB per thread). It may
@@ -10,33 +8,14 @@ an 18GB BAM file.
 """
 
 
-
-import argparse as ap
 import base
+from __main__ import args
 
-
-
-'''
-import subprocess as sp
-sp.call('cd ~/uga/Python/GATKpipe && scp markDups.py base.py \
-lan@xfer2.gacrc.uga.edu:~/tools/GATKpipe', shell = True)
-'''
-
-# =====================
-#  Setting up parser
-# =====================
-ScriptDescript = 'Mark duplicates in BAM files via PICARD MarkDuplicates.'
-
-Parser = ap.ArgumentParser(description = ScriptDescript)
-Parser.add_argument('-c', '--cores', type = int, metavar = 'C', default = 1, 
-                    help = "Maximum number of cores to use. Defaults to 1.")
-Parser.add_argument('files', metavar = 'F', nargs = '+',
-                    help = "BAM input file(s).")
 
 # =====================
 # Reading the arguments
 # =====================
-args = vars(Parser.parse_args())
+
 cores = args['cores']
 files = args['files']
 if files.__class__ == str:
@@ -48,7 +27,7 @@ assert all([x.endswith('.bam') or x.endswith('.BAM') for x in files]), \
 
 
 # =====================
-# Function to run command
+# Function to run command once
 # =====================
 
 def runMarkDups(filePath):
@@ -68,12 +47,12 @@ def runMarkDups(filePath):
 
 
 
-
 # =====================
-# Run command on all file(s)
+# `main` function to run 
+# command on all file(s)
 # =====================
 
-if __name__ ==  '__main__':
+def main():
     base.poolRunFun(function = runMarkDups, cores = cores, inerable = files)
 
 

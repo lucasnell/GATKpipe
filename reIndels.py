@@ -1,5 +1,3 @@
-#!/usr/local/apps/anaconda/3-2.2.0/bin/python
-
 """Local realignment around indels via GATK RealignerTargetCreator and IndelRealigner.
 
 Requires ~15gb RAM per thread for mice AND stickleback.
@@ -8,38 +6,14 @@ Takes from ~12 hrs to 2 days.
 """
 
 
-
-'''
-import subprocess as sp
-sp.call('cd ~/uga/Python/GATKpipe && scp reIndels.py base.py \
-lan@xfer2.gacrc.uga.edu:~/tools/GATKpipe', shell = True)
-'''
-
-
-import argparse as ap
 import base
+from __main__ import args
 
 
 # =====================
-#  Setting up parser
+# Reading the arguments from `args`
 # =====================
-ScriptDescript = 'Local realignment around indels via GATK RealignerTargetCreator ' + \
-                 'and IndelRealigner.'
 
-Parser = ap.ArgumentParser(description = ScriptDescript)
-Parser.add_argument('-r', '--reference', metavar = 'R', 
-                    help = "Path to uncompressed reference fasta file. It is assumed " + \
-                           "that all input BAM files are aligned to this reference.")
-Parser.add_argument('-c', '--cores', type = int, metavar = 'C', default = 1, 
-                    help = "Maximum number of cores to use. Defaults to 1.")
-Parser.add_argument('files', metavar = 'F', nargs = '+',
-                    help = "BAM input file(s).")
-
-
-# =====================
-# Reading the arguments
-# =====================
-args = vars(Parser.parse_args())
 ref = args['reference']
 cores = args['cores']
 files = args['files']
@@ -93,10 +67,11 @@ def runReIndels(filePath, coreString):
 
 
 # =====================
-# Run command on all file(s)
+# `main` function to run 
+# command on all file(s)
 # =====================
 
-if __name__ ==  '__main__':
+def main():
     base.poolRunFun(function = runReIndels, cores = cores, 
                     inerable = zip(files, coreStrList))
 

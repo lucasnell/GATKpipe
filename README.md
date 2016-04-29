@@ -1,11 +1,11 @@
 `GATKpipe`
 =====
-Python wrapper for The Genome Analysis Toolkit's Best Practices pipeline (Broad Institute)
+Python wrapper for The Genome Analysis Toolkit's Best Practices pipeline
 -----
 
 
 This pipeline was developed and tested on the newest high-performance computing cluster 
-("Sapelo") from the Georgia Advanced Computing Resource Center, University of Georgia.
+("Sapelo") at the Georgia Advanced Computing Resource Center, University of Georgia.
 
 - OS: 64-bit CentOS 6.5 
 - Torque Resource Manager

@@ -35,7 +35,7 @@ Parser.add_argument('-c', '--cores', type = int, metavar = 'C', default = 1,
 # >>>>>
 Parser.add_argument('-m', '--moreOptions', metavar = 'M', default = '', 
                     help = "A single string with additional options to pass " + \
-                           "to GenotypeGVCFs. If it contains spaces, be sure " + \
+                           "to GenotypeGVCFs. Be sure " + \
                            "to wrap in double-quotes.")
 # >>>>>
 Parser.add_argument('files', metavar = 'F', nargs = '+',
@@ -49,7 +49,7 @@ args = vars(Parser.parse_args())
 ref = args['reference']
 outName = args['outputName']
 cores = args['cores']
-moreOpts = args['moreOptions'].strip() + ' '
+moreOpts = args['moreOptions'].strip()
 files = args['files']
 if files.__class__ == str:
     files = [files]
@@ -57,7 +57,6 @@ if files.__class__ == str:
 assert ref.endswith('.fa') or ref.endswith('.fasta'), \
     'Reference is not an uncompressed fasta file.'
 
-# >>>>>
 assert all([x.endswith('.g.vcf') for x in files]), \
     'Not all input files are gVCF files.'
 
@@ -109,10 +108,11 @@ def runJointGeno(filePath):
 
 
 # =====================
-# Run command on all files
+# `main` function to run 
+# command on all file(s)
 # =====================
 
-if __name__ ==  '__main__':
+def main():
     runJointGeno(outName)
 
 
