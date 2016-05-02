@@ -1,5 +1,3 @@
-#!/usr/local/apps/anaconda/3-2.2.0/bin/python
-
 """Perform joint genotyping on gVCF files via GenotypeGVCFs.
 
 Required ~ 3gb RAM per thread.
@@ -8,44 +6,14 @@ Takes around 10-20 minutes."""
 
 
 
-import argparse as ap
 import base
-
-'''
-import subprocess as sp
-sp.call('cd ~/uga/Python/GATKpipe && scp jointGeno.py base.py \
-lan@xfer2.gacrc.uga.edu:~/tools/GATKpipe', shell = True)
-'''
-
-# =====================
-#  Setting up parser
-# =====================
-ScriptDescript = 'Joint genotyping via GATK GenotypeGVCFs.'
-
-Parser = ap.ArgumentParser(description = ScriptDescript)
-Parser.add_argument('-r', '--reference', metavar = 'R', required = True,
-                    help = "Path to uncompressed reference fasta file. It is assumed " + \
-                           "that all input files are aligned to this reference.")
-# >>>>>
-Parser.add_argument('-o', '--outputName', metavar = 'O', required = True, 
-                    help = "Name of output file, not including extensions or " + \
-                           "'_jG' suffix.")
-Parser.add_argument('-c', '--cores', type = int, metavar = 'C', default = 1, 
-                    help = "Maximum number of cores to use. Defaults to 1.")
-# >>>>>
-Parser.add_argument('-m', '--moreOptions', metavar = 'M', default = '', 
-                    help = "A single string with additional options to pass " + \
-                           "to GenotypeGVCFs. Be sure " + \
-                           "to wrap in double-quotes.")
-# >>>>>
-Parser.add_argument('files', metavar = 'F', nargs = '+',
-                    help = "gVCF input file(s) that will be jointly genotyped.")
+from __main__ import args
 
 
 # =====================
-# Reading the arguments
+# Reading the arguments from `args`
 # =====================
-args = vars(Parser.parse_args())
+
 ref = args['reference']
 outName = args['outputName']
 cores = args['cores']
