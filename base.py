@@ -158,7 +158,7 @@ export outFile=`echo -n ${tmp[@]} | tr ' ' '_'`_mD.bam\n
 module load java/latest
 module load samtools/latest\n
 
-mkdir ./tmp/${file/.bam/}\n
+mkdir ./tmp/${bamFile/.bam/}\n
 
 java -Xmx18g -Djava.io.tmpdir=./tmp/${bamFile/.bam/} \\
 -jar /usr/local/apps/picard/latest/picard.jar MarkDuplicates \\
