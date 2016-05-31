@@ -24,4 +24,4 @@ reference = args['reference']
 # =====================
 
 def main():
-    sp.call(base.prepRef % reference)
+    sp.call(base.prepRef % reference, shell = True)

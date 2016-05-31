@@ -110,7 +110,7 @@ def makeCoreStringList(cores, files, parType):
 # ==========================================
 
 prepRef = \
-'''export ref=%(ref)s
+'''export ref=%s
 export dictOut=`echo ${ref} | sed 's/.fasta/.dict/g; s/.fa/.dict/g'`
 
 module load java/latest
