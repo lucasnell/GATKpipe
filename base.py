@@ -135,18 +135,20 @@ export javMem=2
 
 module load java/latest
 module load samtools/latest
-module load picard/2.4.1
+module load picard/2.4.1\n
 
-java -Xmx2g -jar /usr/local/apps/picard/latest/picard.jar \\
-AddOrReplaceReadGroups \\
-CREATE_INDEX=true \\
-INPUT=${bamFile} \\
-OUTPUT=${bamFile/.bam/_rG.bam} \\
-RGID=LANE1 \\
-RGLB=${bamFile/.bam/} \\
-RGPL=ILLUMINA \\
-RGPU=ILLUMINA \\
-RGSM=${bamFile/.bam/}
+java -Xmx2g \\
+    -classpath "/usr/local/apps/picard/2.4.1" \\
+    -jar /usr/local/apps/picard/2.4.1/picard.jar \\
+    AddOrReplaceReadGroups \\
+    CREATE_INDEX=false \\
+    INPUT=${bamFile} \\
+    OUTPUT=${bamFile/.bam/_rG.bam} \\
+    RGID=LANE1 \\
+    RGLB=${bamFile/.bam/} \\
+    RGPL=ILLUMINA \\
+    RGPU=ILLUMINA \\
+    RGSM=${bamFile/.bam/}
 
 samtools index -b ${bamFile/.bam/_rG.bam}
 '''
@@ -170,13 +172,14 @@ module load picard/2.4.1\n
 mkdir ./tmp/${bamFile/.bam/}\n
 
 java -Xmx${javMem}g -Djava.io.tmpdir=./tmp/${bamFile/.bam/} \\
--jar /usr/local/apps/picard/latest/picard.jar MarkDuplicates \\
-CREATE_INDEX=true \\
-INPUT=${bamFile} \\
-OUTPUT=${outFile} \\
-MAX_RECORDS_IN_RAM=500000 \\
-TMP_DIR=./tmp/${bamFile/.bam/} \\
-METRICS_FILE=${outFile/.bam/.txt}
+    -classpath "/usr/local/apps/picard/2.4.1" \\
+    -jar /usr/local/apps/picard/2.4.1/picard.jar MarkDuplicates \\
+    CREATE_INDEX=false \\
+    INPUT=${bamFile} \\
+    OUTPUT=${outFile} \\
+    MAX_RECORDS_IN_RAM=500000 \\
+    TMP_DIR=./tmp/${bamFile/.bam/} \\
+    METRICS_FILE=${outFile/.bam/.txt}
 
 samtools index -b ${outFile}
 '''
