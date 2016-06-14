@@ -113,12 +113,15 @@ prepRef = \
 '''export ref=%s
 export dictOut=`echo ${ref} | sed 's/.fasta$/.dict/g; s/.fa$/.dict/g'`
 
+export javMem=2
+
 module load java/latest
 module load samtools/latest
+module load picard/2.4.1\n
 
 samtools faidx ${ref}\n
 
-java -Xmx2g -jar /usr/local/apps/picard/latest/picard.jar \\
+java -Xmx${javMem}g -jar /usr/local/apps/picard/latest/picard.jar \\
 CreateSequenceDictionary \\
 REFERENCE=${ref} \\
 OUTPUT=${dictOut}
@@ -128,8 +131,11 @@ OUTPUT=${dictOut}
 addRG = \
 '''export bamFile=%(bam)s
 
+export javMem=2
+
 module load java/latest
 module load samtools/latest
+module load picard/2.4.1
 
 java -Xmx2g -jar /usr/local/apps/picard/latest/picard.jar \\
 AddOrReplaceReadGroups \\
@@ -149,6 +155,8 @@ samtools index -b ${bamFile/.bam/_rG.bam}
 markDups = \
 '''export bamFile=%(bam)s
 
+export javMem=18
+
 # Making new name, assuming input BAM matches *_<suffix>.bam
 # I did it this way so <suffix> can be anything; '_' is only thing that's important.
 tmp=(${bamFile//_/ })
@@ -156,11 +164,12 @@ unset "tmp[${#tmp[@]}-1]"
 export outFile=`echo -n ${tmp[@]} | tr ' ' '_'`_mD.bam\n
 
 module load java/latest
-module load samtools/latest\n
+module load samtools/latest
+module load picard/2.4.1\n
 
 mkdir ./tmp/${bamFile/.bam/}\n
 
-java -Xmx18g -Djava.io.tmpdir=./tmp/${bamFile/.bam/} \\
+java -Xmx${javMem}g -Djava.io.tmpdir=./tmp/${bamFile/.bam/} \\
 -jar /usr/local/apps/picard/latest/picard.jar MarkDuplicates \\
 CREATE_INDEX=true \\
 INPUT=${bamFile} \\
@@ -184,7 +193,8 @@ unset "tmp[${#tmp[@]}-1]"
 export outFile=`echo -n ${tmp[@]} | tr ' ' '_'`_rI.bam\n
 
 module load java/latest
-module load samtools/latest\n
+module load samtools/latest
+module load gatk/3.5\n
 
 java -jar /usr/local/apps/gatk/latest/GenomeAnalysisTK.jar \\
 -T RealignerTargetCreator \\
@@ -214,7 +224,8 @@ tmp=(${bamFile//_/ })
 unset "tmp[${#tmp[@]}-1]"
 export outFile=`echo -n ${tmp[@]} | tr ' ' '_'`_cV.g.vcf\n
 
-module load java/latest\n
+module load java/latest
+module load gatk/3.5\n
 
 java -jar /usr/local/apps/gatk/latest/GenomeAnalysisTK.jar \\
 -T HaplotypeCaller \\
@@ -230,7 +241,8 @@ java -jar /usr/local/apps/gatk/latest/GenomeAnalysisTK.jar \\
 jointGeno = \
 '''export reference=%(ref)s
 
-module load java/latest\n
+module load java/latest
+module load gatk/3.5\n
 
 java -jar /usr/local/apps/gatk/latest/GenomeAnalysisTK.jar \\
 -T GenotypeGVCFs \\
