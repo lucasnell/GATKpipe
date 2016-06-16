@@ -5,7 +5,8 @@ Python wrapper for The Genome Analysis Toolkit's Best Practices pipeline
 
 
 This pipeline was developed and tested on the newest high-performance computing cluster 
-("Sapelo") at the Georgia Advanced Computing Resource Center, University of Georgia.
+("Sapelo") at the Georgia Advanced Computing Resource Center (GACRC), University of
+Georgia.
 
 - OS: 64-bit CentOS 6.5 
 - Torque Resource Manager
@@ -21,4 +22,5 @@ Parts specific to this system that you'll want to change include the following:
   - Paths to GATK (`/usr/local/apps/gatk/latest/GenomeAnalysisTK.jar`)
 
 
-
+These scripts also use PICARD version 2.4.1 and GATK version 3.5. You'll want to update
+these in `base.py` as they are updated on GACRC.
