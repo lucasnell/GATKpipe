@@ -121,7 +121,7 @@ module load picard/2.4.1\n
 
 samtools faidx ${ref}\n
 
-java -Xmx${javMem}g -jar /usr/local/apps/picard/latest/picard.jar \\
+java -Xmx${javMem}g -jar /usr/local/apps/picard/2.4.1/picard.jar \\
 CreateSequenceDictionary \\
 REFERENCE=${ref} \\
 OUTPUT=${dictOut}
@@ -137,7 +137,7 @@ module load java/latest
 module load samtools/latest
 module load picard/2.4.1\n
 
-java -Xmx2g \\
+java -Xmx${javaMem}g \\
     -classpath "/usr/local/apps/picard/2.4.1" \\
     -jar /usr/local/apps/picard/2.4.1/picard.jar \\
     AddOrReplaceReadGroups \\
@@ -199,14 +199,14 @@ module load java/latest
 module load samtools/latest
 module load gatk/3.5\n
 
-java -jar /usr/local/apps/gatk/latest/GenomeAnalysisTK.jar \\
+java -jar /usr/local/apps/gatk/3.5/GenomeAnalysisTK.jar \\
 -T RealignerTargetCreator \\
 -R ${reference} \\
 %(corS)s\\
 -I ${bamFile} \\
 -o ${outFile/.bam/.list}\n
 
-java -jar /usr/local/apps/gatk/latest/GenomeAnalysisTK.jar \\
+java -jar /usr/local/apps/gatk/3.5/GenomeAnalysisTK.jar \\
 -T IndelRealigner \\
 -R ${reference} \\
 -I ${bamFile} \\
@@ -230,7 +230,7 @@ export outFile=`echo -n ${tmp[@]} | tr ' ' '_'`_cV.g.vcf\n
 module load java/latest
 module load gatk/3.5\n
 
-java -jar /usr/local/apps/gatk/latest/GenomeAnalysisTK.jar \\
+java -jar /usr/local/apps/gatk/3.5/GenomeAnalysisTK.jar \\
 -T HaplotypeCaller \\
 -R ${reference} \\
 %(corS)s\\
@@ -247,7 +247,7 @@ jointGeno = \
 module load java/latest
 module load gatk/3.5\n
 
-java -jar /usr/local/apps/gatk/latest/GenomeAnalysisTK.jar \\
+java -jar /usr/local/apps/gatk/3.5/GenomeAnalysisTK.jar \\
 -T GenotypeGVCFs \\
 -R ${reference} \\
 %(coreS)s \\
