@@ -115,8 +115,8 @@ export dictOut=`echo ${ref} | sed 's/.fasta$/.dict/g; s/.fa$/.dict/g'`
 
 export javMem=2
 
-module load java/latest
-module load samtools/latest
+module load java/jdk1.8.0_20
+module load samtools/1.2
 module load picard/2.4.1\n
 
 samtools faidx ${ref}\n
@@ -133,8 +133,8 @@ addRG = \
 
 export javMem=2
 
-module load java/latest
-module load samtools/latest
+module load java/jdk1.8.0_20
+module load samtools/1.2
 module load picard/2.4.1\n
 
 java -Xmx${javaMem}g \\
@@ -165,8 +165,8 @@ tmp=(${bamFile//_/ })
 unset "tmp[${#tmp[@]}-1]"
 export outFile=`echo -n ${tmp[@]} | tr ' ' '_'`_mD.bam\n
 
-module load java/latest
-module load samtools/latest
+module load java/jdk1.8.0_20
+module load samtools/1.2
 module load picard/2.4.1\n
 
 mkdir ./tmp/${bamFile/.bam/}\n
@@ -195,18 +195,18 @@ tmp=(${bamFile//_/ })
 unset "tmp[${#tmp[@]}-1]"
 export outFile=`echo -n ${tmp[@]} | tr ' ' '_'`_rI.bam\n
 
-module load java/latest
-module load samtools/latest
-module load gatk/3.5\n
+module load java/jdk1.8.0_20
+module load samtools/1.2
+module load gatk/3.6\n
 
-java -jar /usr/local/apps/gatk/3.5/GenomeAnalysisTK.jar \\
+java -jar /usr/local/apps/gatk/3.6/GenomeAnalysisTK.jar \\
 -T RealignerTargetCreator \\
 -R ${reference} \\
 %(corS)s\\
 -I ${bamFile} \\
 -o ${outFile/.bam/.list}\n
 
-java -jar /usr/local/apps/gatk/3.5/GenomeAnalysisTK.jar \\
+java -jar /usr/local/apps/gatk/3.6/GenomeAnalysisTK.jar \\
 -T IndelRealigner \\
 -R ${reference} \\
 -I ${bamFile} \\
@@ -227,10 +227,10 @@ tmp=(${bamFile//_/ })
 unset "tmp[${#tmp[@]}-1]"
 export outFile=`echo -n ${tmp[@]} | tr ' ' '_'`_cV.g.vcf\n
 
-module load java/latest
-module load gatk/3.5\n
+module load java/jdk1.8.0_20
+module load gatk/3.6\n
 
-java -jar /usr/local/apps/gatk/3.5/GenomeAnalysisTK.jar \\
+java -jar /usr/local/apps/gatk/3.6/GenomeAnalysisTK.jar \\
 -T HaplotypeCaller \\
 -R ${reference} \\
 %(corS)s\\
@@ -244,10 +244,10 @@ java -jar /usr/local/apps/gatk/3.5/GenomeAnalysisTK.jar \\
 jointGeno = \
 '''export reference=%(ref)s
 
-module load java/latest
-module load gatk/3.5\n
+module load java/jdk1.8.0_20
+module load gatk/3.6\n
 
-java -jar /usr/local/apps/gatk/3.5/GenomeAnalysisTK.jar \\
+java -jar /usr/local/apps/gatk/3.6/GenomeAnalysisTK.jar \\
 -T GenotypeGVCFs \\
 -R ${reference} \\
 %(coreS)s \\

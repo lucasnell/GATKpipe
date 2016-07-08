@@ -18,9 +18,9 @@ Parts specific to this system that you'll want to change include the following:
   - The sha-bang (`#!/usr/local/apps/anaconda/3-2.2.0/bin/python`)
 * In `base.py`:
   - `module load foo`, where `foo` is a software package
-  - Paths to PICARD (`/usr/local/apps/picard/latest/picard.jar`)
-  - Paths to GATK (`/usr/local/apps/gatk/latest/GenomeAnalysisTK.jar`)
+  - Paths to PICARD (`/usr/local/apps/picard/2.4.1/picard.jar`)
+  - Paths to GATK (`/usr/local/apps/gatk/3.6/GenomeAnalysisTK.jar`)
 
 
-These scripts also use PICARD version 2.4.1 and GATK version 3.5. You'll want to update
+These scripts also use PICARD version 2.4.1 and GATK version 3.6. You'll want to update
 these in `base.py` as they are updated on GACRC.
