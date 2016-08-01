@@ -137,7 +137,7 @@ module load java/jdk1.8.0_20
 module load samtools/1.2
 module load picard/2.4.1\n
 
-java -Xmx${javaMem}g \\
+java -Xmx${javMem}g \\
     -classpath "/usr/local/apps/picard/2.4.1" \\
     -jar /usr/local/apps/picard/2.4.1/picard.jar \\
     AddOrReplaceReadGroups \\
