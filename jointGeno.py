@@ -37,7 +37,7 @@ assert all([x.endswith('.g.vcf') for x in files]), \
 # `GenotypeGVCFs` allows multithreading, but if we specify 1 core, we'll skip the 
 # `-nt` argument altogether.
 
-if cores = 1:
+if cores == 1:
     coreString = ''
 else:
     coreString = '-nt %i' % cores
